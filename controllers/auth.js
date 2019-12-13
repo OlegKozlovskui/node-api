@@ -48,6 +48,36 @@ exports.getMe = asyncHandler(async (req, res, next) => {
   });
 });
 
+exports.updateDetails = asyncHandler(async (req, res, next) => {
+  const fieldsToUpdate = {
+    name: req.body.name,
+    email: req.body.email,
+  };
+
+  const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
+    new: true,
+    runValidators: true,
+  });
+
+  res.status(200).json({
+    success: true,
+    data: user
+  });
+});
+
+exports.updatePassword = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id).select('+password');
+
+  if (!(await user.matchPassword(req.body.currentPassword))) {
+    return next(new ErrorResponse('Incorrect password', 401));
+  }
+
+  user.password = req.body.newPassword;
+  await user.save();
+
+  setTokenResponse(user, 200, res);
+});
+
 exports.forgotPassword = asyncHandler(async (req, res, next) => {
   const user = await User.findOne({ email: req.body.email });
 
